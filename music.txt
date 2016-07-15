@@ -1,0 +1,6 @@
+Instrument=41;
+Scale=C3;
+Timing=4/4;
+BPM=120;
+Type=Indian;
+Notes=G G m P P m G R S S R G G R R o G G m P P m G R S S R G R S S o R R G S R m G S R m G R S R P- o G G m P P m G R S S R G R S S o;
