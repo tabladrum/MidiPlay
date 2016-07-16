@@ -1,10 +1,14 @@
 package com.topo.miditest;
 
 
+import org.apache.commons.lang.StringUtils;
+
 import javax.naming.directory.InvalidAttributesException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.StringTokenizer;
 
 public class MusicFile {
@@ -13,7 +17,7 @@ public class MusicFile {
     private Scale scale = new Scale(NoteNotation.C, 5);
     private String timing = "4/4";
     private int bpm = 60;
-    private String[] notes;
+    private Note[] notes;
     private String file;
     private NotationType type;
 
@@ -72,7 +76,7 @@ public class MusicFile {
 
                 case NOTES:
                     String noteString = parts[1];
-                    notes = noteString.split(" ");
+                    notes = getNotesFromString(noteString);
                     break;
 
                 default:
@@ -80,6 +84,31 @@ public class MusicFile {
             }
 
         }
+    }
+
+    private Note[] getNotesFromString(String noteString) {
+        String[] notes = noteString.split(noteString, ' ');
+        List<Note> noteList = new LinkedList<>();
+        for (int i = 0; i < notes.length; i++) {
+            if (notes[i].length() == 1) {
+                Note n = new Note(notes[i], bpm);
+                noteList.add(n);
+            } else {
+                String[] singles = breakCompoundNotes(notes[i]);
+                int thisBpm = bpm / singles.length;
+                for (String s : singles) {
+                    Note n = new Note(s, thisBpm);
+                    noteList.add(n);
+                }
+            }
+        }
+        return (Note[]) noteList.toArray();
+    }
+
+    private String[] breakCompoundNotes(String notes) {
+        notes = StringUtils.removeStart(notes, "(");
+        notes = StringUtils.removeEnd(notes, ")");
+        return notes.split(",");
     }
 
     public int getInstrument() {
@@ -94,7 +123,7 @@ public class MusicFile {
         return timing;
     }
 
-    public String[] getNotes() {
+    public Note[] getNotes() {
         return notes;
     }
 

@@ -40,9 +40,9 @@ public class PlayNote {
 
     public static void main(String[] args) {
         MusicFile f = new MusicFile("/Users/yaf107/Desktop/music.txt");
-        String[] notess = f.getNotes();
+        Note[] notess = f.getNotes();
         TranslateNotes translateNotes = new TranslateNotes(notess, f.getType(), f.getScale());
-        int[] midiNotes = translateNotes.getCodes();
+        Note[] finalNotes = translateNotes.getNotes();
         try {
         /* Create a new Sythesizer and open it. Most of
          * the methods you will want to use to expand on this
@@ -60,9 +60,9 @@ public class PlayNote {
             midiSynth.remapInstrument(instr[0], instr[f.getInstrument()]);
             PlayNote pn = new PlayNote();
             pn.playNote(-1, f.getBpm(), mChannels);
-            for (int n : midiNotes) {
+            for (Note n : finalNotes) {
                 System.out.println(n);
-                pn.playNote(n, f.getBpm(), mChannels);
+                pn.playNote(n.getMidi(), n.getDuration(), mChannels);
             }
 //            int[] notes = {60, 63, 67};
 //

@@ -4,12 +4,12 @@ package com.topo.miditest;
 import org.apache.commons.lang.StringUtils;
 
 public class TranslateNotes {
-    private String[] notes;
+    private Note[] notes;
     private int[] codes;
     private Scale scale;
 
 
-    public TranslateNotes (String[] notes, NotationType type, Scale scale) {
+    public TranslateNotes (Note[] notes, NotationType type, Scale scale) {
         this.notes = notes;
         this.scale = scale;
         translate(type);
@@ -31,12 +31,12 @@ public class TranslateNotes {
     private void translateWestern() {
         codes = new int[notes.length];
         for (int i = 0; i < notes.length; i++) {
-            String cleanNote = notes[i].replace("+","").replace("-","");
-            if ("O".equalsIgnoreCase(notes[i])) {
-                codes[i] = -1;
+            String cleanNote = notes[i].getNote().replace("+","").replace("-","");
+            if ("O".equalsIgnoreCase(notes[i].getNote())) {
+                notes[i].setMidi(-1);
             } else {
                 WesternNotation wn = WesternNotation.fromString(cleanNote);
-                codes[i] = NoteToMidiNote.getMidiNote(NoteNotation.fromOrdinal(wn.ordinal()), getOctave(notes[i]), scale);
+                notes[i].setMidi(NoteToMidiNote.getMidiNote(NoteNotation.fromOrdinal(wn.ordinal()), getOctave(notes[i].getNote()), scale));
             }
         }
     }
@@ -50,14 +50,14 @@ public class TranslateNotes {
     private void translateIndian() {
         codes = new int[notes.length];
         for (int i = 0; i < notes.length; i++) {
-            String cleanNote = notes[i].replace("+","").replace("-","");
+            String cleanNote = notes[i].getNote().replace("+","").replace("-","");
 
-            if ("O".equalsIgnoreCase(notes[i])) {
-                codes[i] = -1;
+            if ("O".equalsIgnoreCase(notes[i].getNote())) {
+                notes[i].setMidi(-1);
             } else {
                 IndianNotation in = IndianNotation.fromString(cleanNote);
 
-                codes[i] = NoteToMidiNote.getMidiNote(NoteNotation.fromOrdinal(in.ordinal()), getOctave(notes[i]), scale );
+                notes[i].setMidi(NoteToMidiNote.getMidiNote(NoteNotation.fromOrdinal(in.ordinal()), getOctave(notes[i].getNote()), scale ));
             }
         }
     }
@@ -65,5 +65,9 @@ public class TranslateNotes {
 
     public int[] getCodes() {
         return codes;
+    }
+
+    public Note[] getNotes() {
+        return notes;
     }
 }
