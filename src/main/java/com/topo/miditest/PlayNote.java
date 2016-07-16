@@ -61,7 +61,7 @@ public class PlayNote {
             PlayNote pn = new PlayNote();
             pn.playNote(-1, f.getBpm(), mChannels);
             for (Note n : finalNotes) {
-                System.out.println(n);
+                System.out.println(n.getNote());
                 pn.playNote(n.getMidi(), n.getDuration(), mChannels);
             }
 //            int[] notes = {60, 63, 67};

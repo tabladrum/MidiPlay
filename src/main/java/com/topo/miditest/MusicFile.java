@@ -55,27 +55,27 @@ public class MusicFile {
             String[] parts = s.split(VARIABLE_DELIM);
             switch (parts[0].toUpperCase()) {
                 case INSTRUMENT:
-                    instrument = Integer.parseInt(parts[1]);
+                    instrument = Integer.parseInt(parts[1].trim());
 
                 case BPM:
-                    bpm = Integer.parseInt(parts[1]);
+                    bpm = Integer.parseInt(parts[1].trim());
                     break;
 
                 case SCALE:
-                    char[] chars = parts[1].toCharArray();
+                    char[] chars = parts[1].trim().toCharArray();
                     scale = new Scale(NoteNotation.fromString(String.valueOf(chars[0])), Integer.parseInt(String.valueOf(chars[1])));
                     break;
 
                 case TIMING:
-                    timing = parts[1];
+                    timing = parts[1].trim();
                     break;
 
                 case TYPE:
-                    type = NotationType.fromString(parts[1]);
+                    type = NotationType.fromString(parts[1].trim());
                     break;
 
                 case NOTES:
-                    String noteString = parts[1];
+                    String noteString = parts[1].trim();
                     notes = getNotesFromString(noteString);
                     break;
 
@@ -87,7 +87,7 @@ public class MusicFile {
     }
 
     private Note[] getNotesFromString(String noteString) {
-        String[] notes = noteString.split(noteString, ' ');
+        String[] notes = StringUtils.split(noteString, " ");
         List<Note> noteList = new LinkedList<>();
         for (int i = 0; i < notes.length; i++) {
             if (notes[i].length() == 1) {
@@ -95,14 +95,20 @@ public class MusicFile {
                 noteList.add(n);
             } else {
                 String[] singles = breakCompoundNotes(notes[i]);
-                int thisBpm = bpm / singles.length;
+                int thisBpm = bpm * singles.length;
                 for (String s : singles) {
                     Note n = new Note(s, thisBpm);
                     noteList.add(n);
                 }
             }
         }
-        return (Note[]) noteList.toArray();
+        Note[] returnArray = new Note[noteList.size()];
+        int i = 0;
+        for (Note n: noteList) {
+            returnArray[i] = n;
+            i = i + 1;
+        }
+        return returnArray;
     }
 
     private String[] breakCompoundNotes(String notes) {
