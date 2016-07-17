@@ -31,6 +31,11 @@ public class MusicFile {
     private static final String BPM = "BPM";
     private static final String TYPE = "TYPE";
 
+    private static final String CHORD_BEGIN = "[";
+    private static final String CHORD_END = "]";
+    private static final String COMPOUND_BEGIN = "(";
+    private static final String COMPOUND_END = ")";
+
     public MusicFile(String file) {
         this.file = file;
         init();
@@ -48,7 +53,7 @@ public class MusicFile {
     }
 
     private void parseInput(String input) throws InvalidAttributesException {
-        input = input.replace("\n","");
+        input = input.replace("\n", "");
         StringTokenizer st = new StringTokenizer(input, LINE_DELIM);
         while (st.hasMoreElements()) {
             String s = st.nextElement().toString();
@@ -90,21 +95,24 @@ public class MusicFile {
         String[] notes = StringUtils.split(noteString, " ");
         List<Note> noteList = new LinkedList<>();
         for (int i = 0; i < notes.length; i++) {
-            if (notes[i].length() == 1) {
-                Note n = new Note(notes[i], bpm);
+            String cleanNote = StringUtils.remove(notes[i], '-');
+            cleanNote = StringUtils.remove(cleanNote, '+');
+            if (cleanNote.length() < 2) {
+                Note n = new Note(notes[i]); // midi note length 64 = full note.
                 noteList.add(n);
-            } else {
-                String[] singles = breakCompoundNotes(notes[i]);
-                int thisBpm = bpm * singles.length;
-                for (String s : singles) {
-                    Note n = new Note(s, thisBpm);
-                    noteList.add(n);
-                }
+            } else if (notes[i].startsWith(COMPOUND_BEGIN) || notes[i].startsWith(CHORD_BEGIN)) {
+                String tempNotes = StringUtils.removeEnd(notes[i], CHORD_END);
+                tempNotes = StringUtils.removeStart(tempNotes, CHORD_BEGIN);
+                tempNotes = StringUtils.removeEnd(tempNotes, COMPOUND_END);
+                tempNotes = StringUtils.removeStart(tempNotes, COMPOUND_BEGIN);
+                String[] singles = tempNotes.split(",");
+                Note n = new Note(singles, notes[i].startsWith(CHORD_BEGIN));
+                noteList.add(n);
             }
         }
         Note[] returnArray = new Note[noteList.size()];
         int i = 0;
-        for (Note n: noteList) {
+        for (Note n : noteList) {
             returnArray[i] = n;
             i = i + 1;
         }

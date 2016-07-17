@@ -20,16 +20,34 @@ public class PlayNote {
             Thread.sleep(sleepTime); // wait time in milliseconds to control duration
         } catch (InterruptedException e) {
         }
-        channels[0].noteOff(note);//turn of the note
+        channels[0].noteOff(note,5000);//turn of the note
+    }
+
+    public void playNoteWithBeat (int note, int bpm, MidiChannel[] channels) {
+
+        if (note >= 0) {
+            channels[0].noteOn(note, 100);
+            channels[9].noteOn(55,100);
+        }
+        float sleep = (float) ((60.0 / (float )bpm) * 1000.0);
+        long sleepTime = Integer.toUnsignedLong(Math.round(sleep));
+        try {
+            Thread.sleep(sleepTime); // wait time in milliseconds to control duration
+        } catch (InterruptedException e) {
+        }
+        channels[0].noteOff(note,5000);//turn of the note
+        channels[9].noteOff(55,5000);//turn of the note
     }
 
 
-    public void playNotes (int[] notes, MidiChannel[] channels) {
+    public void playNotes (int[] notes, int bpm,  MidiChannel[] channels) {
         for (int i = 0; i < notes.length -1 ; i++) {
             channels[i].noteOn(notes[i], 100);
         }
+        float sleep = (float) ((60.0 / (float )bpm) * 1000.0);
+        long sleepTime = Integer.toUnsignedLong(Math.round(sleep));
         try {
-            Thread.sleep(1000); // wait time in milliseconds to control duration
+            Thread.sleep(sleepTime); // wait time in milliseconds to control duration
         } catch (InterruptedException e) {
         }
         for (int i = 0; i < notes.length -1 ; i++){
@@ -39,7 +57,7 @@ public class PlayNote {
 
 
     public static void main(String[] args) {
-        MusicFile f = new MusicFile("/Users/yaf107/Desktop/music.txt");
+        MusicFile f = new MusicFile("/Users/yaf107/Desktop/MeruKhand.txt");
         Note[] notess = f.getNotes();
         TranslateNotes translateNotes = new TranslateNotes(notess, f.getType(), f.getScale());
         Note[] finalNotes = translateNotes.getNotes();
@@ -57,12 +75,18 @@ public class PlayNote {
             MidiChannel[] mChannels = midiSynth.getChannels();
             Soundbank bank = midiSynth.getDefaultSoundbank();
             midiSynth.loadAllInstruments(midiSynth.getDefaultSoundbank());
-            midiSynth.remapInstrument(instr[0], instr[f.getInstrument()]);
+//            midiSynth.remapInstrument(instr[0], instr[f.getInstrument()]);
+            mChannels[0].programChange(f.getInstrument());
             PlayNote pn = new PlayNote();
             pn.playNote(-1, f.getBpm(), mChannels);
             for (Note n : finalNotes) {
                 System.out.println(n.getNote());
-                pn.playNote(n.getMidi(), n.getDuration(), mChannels);
+//                if (n.isTogether()) {
+//                    pn.playNotes(n.getMidi(), n.getDuration(), mChannels);
+//                } else {
+//                    pn.playNote(n.getMidi()[0], n.getDuration(), mChannels);
+////                    pn.playNoteWithBeat(n.getMidi()[0], n.getDuration(), mChannels);
+//                }
             }
 //            int[] notes = {60, 63, 67};
 //
