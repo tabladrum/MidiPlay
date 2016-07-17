@@ -39,24 +39,7 @@ public class MidiSequence {
     }
 
 
-    /*
- * This method parses the specified char[  ] of notes into a Track.
- * The musical notation is the following:
- * A-G:   A named note; Add b for flat and # for sharp.
- * +:     Move up one octave. Persists.
- * -:     Move down one octave.  Persists.
- * /1:    Notes are whole notes.  Persists 'till changed
- * /2:    Half notes
- * /4:    Quarter notes
- * /n:    N can also be 8, 16, 32, 64.
- * s:     Toggle sustain pedal on or off (initially off)
- *
- * >:     Louder.  Persists
- * <:     Softer.  Persists
- * .:     Rest. Length depends on current length setting
- * Space: Play the previous note or notes; notes not separated by spaces
- *        are played at the same time
- */
+
     public void addTrack(int instrument, Note[] notes) throws InvalidMidiDataException {
         Track track = sequence.createTrack();  // Begin with a new track
         // Set the instrument on channel 0
@@ -64,34 +47,25 @@ public class MidiSequence {
         sm.setMessage(ShortMessage.PROGRAM_CHANGE, 0, instrument, 0);
         track.add(new MidiEvent(sm, 0));
 
-//        int n = 0; // current character in notes[  ] array
         int timeInTicks = 60; // time in ticks for the composition
+        int notelength; // default to quarter notes
 
-        // These values persist and apply to all notes 'till changed
-        int notelength = beatResolution; // default to quarter notes
-        int velocity = 64;   // default to middle volume
-        int basekey = 60;    // 60 is middle C. Adjusted up and down by octave
-        boolean sustain = false;   // is the sustain pedal depressed?
-        int numnotes = 0;    // How many notes in current chord?
-
+        boolean firstNote = true;
         for (int n = 0; n < notes.length; n++) {
             int[] keys = notes[n].getMidi();
             if (keys.length == 1) {
                 int key = keys[0];
-                /**
-                 * quater note = 1 beat
-                 * 1 beat = 16
-                 */
                 notelength = beatResolution;
-
                 //sustain
-//                ShortMessage m = new ShortMessage();
-//                m.setMessage(ShortMessage.CONTROL_CHANGE, 0,
-//                        DAMPER_PEDAL, notes[n].isSustain() ? DAMPER_ON : DAMPER_OFF);
-//                track.add(new MidiEvent(m, timeInTicks));
+                ShortMessage m = new ShortMessage();
+                m.setMessage(ShortMessage.CONTROL_CHANGE, 0,
+                        DAMPER_PEDAL, notes[n].isSustain() ? DAMPER_ON : DAMPER_OFF);
+                track.add(new MidiEvent(m, timeInTicks));
 
                 if (key !=-1) {
                     addNote(track, timeInTicks, notelength, key, notes[n].getVelocity());
+//                    addNoteSmooth(track, timeInTicks, notelength, key, notes[n].getVelocity(), firstNote ? 1 : 2);
+                    firstNote = !firstNote;
                 }
                 timeInTicks += notelength;
             } else {
@@ -101,11 +75,6 @@ public class MidiSequence {
                     notelength = beatResolution / keys.length;
                 }
                 for (int i = 0; i < keys.length; i++) {
-//                    //sustain
-//                    ShortMessage m = new ShortMessage();
-//                    m.setMessage(ShortMessage.CONTROL_CHANGE, 0,
-//                            DAMPER_PEDAL, notes[n].isSustain() ? DAMPER_ON : DAMPER_OFF);
-//                    track.add(new MidiEvent(m, timeInTicks));
                     if (keys[i] !=-1) {
                         addNote(track, timeInTicks, notelength, keys[i], notes[n].getVelocity());
                     }
@@ -119,56 +88,6 @@ public class MidiSequence {
                 }
 
             }
-            /**
-             char c = notes[n++];
-             int[] keys = notes[n].getMidi();
-
-             if (c == '+') basekey += 12;        // increase octave
-
-             else if (c == '-') basekey -= 12;   // decrease octave
-             else if (c == '>') velocity += 16;  // increase volume;
-             else if (c == '<') velocity -= 16;  // decrease volume;
-             else if (c == '/') {
-             char d = notes[n++];
-             if (d == '2') notelength = 32;  // half note
-             else if (d == '4') notelength = 16;  // quarter note
-             else if (d == '8') notelength = 8;   // eighth note
-             else if (d == '3' && notes[n++] == '2') notelength = 2;
-             else if (d == '6' && notes[n++] == '4') notelength = 1;
-             else if (d == '1') {
-             if (n < notes.length && notes[n] == '6')
-             notelength = 4;    // 1/16th note
-             else notelength = 64;  // whole note
-             }
-             } else if (c == 's') {
-             sustain = !sustain;
-             // Change the sustain setting for channel 0
-             ShortMessage m = new ShortMessage();
-             m.setMessage(ShortMessage.CONTROL_CHANGE, 0,
-             DAMPER_PEDAL, sustain ? DAMPER_ON : DAMPER_OFF);
-             track.add(new MidiEvent(m, timeInTicks));
-             }
-
-             addNote(track, timeInTicks, notelength, key, velocity);
-             numnotes++;
-             } else if (c == ' ') {
-             // Spaces separate groups of notes played at the same time.
-             // But we ignore them unless they follow a note or notes.
-             if (numnotes > 0) {
-             timeInTicks += notelength;
-             numnotes = 0;
-             }
-             } else if (c == '.') {
-             // Rests are like spaces in that they force any previous
-             // note to be output (since they are never part of chords)
-             if (numnotes > 0) {
-             timeInTicks += notelength;
-             numnotes = 0;
-             }
-             // Now add additional rest time
-             timeInTicks += notelength;
-             }
-             **/
         }
     }
 
@@ -182,6 +101,23 @@ public class MidiSequence {
         off.setMessage(ShortMessage.NOTE_OFF, 0, key, velocity);
         track.add(new MidiEvent(on, startTick));
         track.add(new MidiEvent(off, startTick + tickLength));
+    }
+
+    public static void addNoteSmooth (Track track, int startTick,
+                               int tickLength, int key, int velocity, int noteNumber)
+            throws InvalidMidiDataException {
+
+        if (noteNumber == 2) {
+            ShortMessage on = new ShortMessage();
+            on.setMessage(ShortMessage.NOTE_ON, 0, key, velocity);
+            track.add(new MidiEvent(on, startTick));
+        }
+
+        if (noteNumber == 1) {
+            ShortMessage off = new ShortMessage();
+            off.setMessage(ShortMessage.NOTE_OFF, 0, key, velocity);
+            track.add(new MidiEvent(off, startTick + tickLength));
+        }
     }
 
     public void play() throws MidiUnavailableException, InvalidMidiDataException {
