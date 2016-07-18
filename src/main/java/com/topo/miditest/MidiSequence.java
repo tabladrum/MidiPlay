@@ -1,16 +1,11 @@
 package com.topo.miditest;
 
 import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MetaEventListener;
-import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Sequence;
-import javax.sound.midi.Sequencer;
 import javax.sound.midi.ShortMessage;
-import javax.sound.midi.Synthesizer;
 import javax.sound.midi.Track;
+import java.util.List;
 
 /**
  * Created by yaf107 on 7/16/16.
@@ -39,8 +34,7 @@ public class MidiSequence {
     }
 
 
-
-    public void addTrack(int instrument, Note[] notes) throws InvalidMidiDataException {
+    public void addTrack(int instrument, List<Note[]> noteList) throws InvalidMidiDataException {
         Track track = sequence.createTrack();  // Begin with a new track
         // Set the instrument on channel 0
         ShortMessage sm = new ShortMessage();
@@ -51,42 +45,44 @@ public class MidiSequence {
         int notelength; // default to quarter notes
 
         boolean firstNote = true;
-        for (int n = 0; n < notes.length; n++) {
-            int[] keys = notes[n].getMidi();
-            if (keys.length == 1) {
-                int key = keys[0];
-                notelength = beatResolution;
-                //sustain
-                ShortMessage m = new ShortMessage();
-                m.setMessage(ShortMessage.CONTROL_CHANGE, 0,
-                        DAMPER_PEDAL, notes[n].isSustain() ? DAMPER_ON : DAMPER_OFF);
-                track.add(new MidiEvent(m, timeInTicks));
-
-                if (key !=-1) {
-                    addNote(track, timeInTicks, notelength, key, notes[n].getVelocity());
-//                    addNoteSmooth(track, timeInTicks, notelength, key, notes[n].getVelocity(), firstNote ? 1 : 2);
-                    firstNote = !firstNote;
-                }
-                timeInTicks += notelength;
-            } else {
-                if (notes[n].isTogether()) {
+        for (Note[] notes : noteList) {
+            for (int n = 0; n < notes.length; n++) {
+                int[] keys = notes[n].getMidi();
+                if (keys.length == 1) {
+                    int key = keys[0];
                     notelength = beatResolution;
-                } else {
-                    notelength = beatResolution / keys.length;
-                }
-                for (int i = 0; i < keys.length; i++) {
-                    if (keys[i] !=-1) {
-                        addNote(track, timeInTicks, notelength, keys[i], notes[n].getVelocity());
+                    //sustain
+                    ShortMessage m = new ShortMessage();
+                    m.setMessage(ShortMessage.CONTROL_CHANGE, 0,
+                            DAMPER_PEDAL, notes[n].isSustain() ? DAMPER_ON : DAMPER_OFF);
+                    track.add(new MidiEvent(m, timeInTicks));
+
+                    if (key != -1) {
+                        addNote(track, timeInTicks, notelength, key, notes[n].getVelocity());
+//                    addNoteSmooth(track, timeInTicks, notelength, key, notes[n].getVelocity(), firstNote ? 1 : 2);
+                        firstNote = !firstNote;
                     }
-                    if (!notes[n].isTogether()) {
-                        timeInTicks += notelength;
+                    timeInTicks += notelength;
+                } else {
+                    if (notes[n].isTogether()) {
+                        notelength = beatResolution;
                     } else {
-                        if (i == keys.length - 1) {
+                        notelength = beatResolution / keys.length;
+                    }
+                    for (int i = 0; i < keys.length; i++) {
+                        if (keys[i] != -1) {
+                            addNote(track, timeInTicks, notelength, keys[i], notes[n].getVelocity());
+                        }
+                        if (!notes[n].isTogether()) {
                             timeInTicks += notelength;
+                        } else {
+                            if (i == keys.length - 1) {
+                                timeInTicks += notelength;
+                            }
                         }
                     }
-                }
 
+                }
             }
         }
     }
@@ -103,8 +99,8 @@ public class MidiSequence {
         track.add(new MidiEvent(off, startTick + tickLength));
     }
 
-    public static void addNoteSmooth (Track track, int startTick,
-                               int tickLength, int key, int velocity, int noteNumber)
+    public static void addNoteSmooth(Track track, int startTick,
+                                     int tickLength, int key, int velocity, int noteNumber)
             throws InvalidMidiDataException {
 
         if (noteNumber == 2) {
@@ -120,27 +116,7 @@ public class MidiSequence {
         }
     }
 
-    public void play() throws MidiUnavailableException, InvalidMidiDataException {
-        Sequencer sequencer = MidiSystem.getSequencer();
-        sequencer.open();
-        Synthesizer synthesizer = MidiSystem.getSynthesizer();
-        synthesizer.open();
-        sequencer.getTransmitter().setReceiver(synthesizer.getReceiver());
-
-        // Specify the sequence to play, and the tempo to play it at
-        sequencer.setTempoInBPM((float)tempo);
-        sequencer.setSequence(sequence);
-
-
-        // Let us know when it is done playing
-        sequencer.addMetaEventListener(new MetaEventListener() {
-            public void meta(MetaMessage m) {
-                // A message of this type is automatically sent
-                // when we reach the end of the track
-                if (m.getType() == END_OF_TRACK) System.exit(0);
-            }
-        });
-        // And start playing now.
-        sequencer.start();
+    public Sequence getSequence() {
+        return sequence;
     }
 }
