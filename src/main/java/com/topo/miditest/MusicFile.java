@@ -18,8 +18,12 @@ public class MusicFile {
     private String timing = "4/4";
     private int bpm = 60;
     private Note[] notes;
+    private String[] rawNotes;
     private String file;
     private NotationType type;
+    private PlayMode mode;
+    private int resolution = 60;
+
 
     private static final String LINE_DELIM = ";";
     private static final String VARIABLE_DELIM = "=";
@@ -30,6 +34,7 @@ public class MusicFile {
     private static final String NOTES = "NOTES";
     private static final String BPM = "BPM";
     private static final String TYPE = "TYPE";
+    private static final String MODE = "MODE";
 
     private static final String CHORD_BEGIN = "[";
     private static final String CHORD_END = "]";
@@ -79,9 +84,21 @@ public class MusicFile {
                     type = NotationType.fromString(parts[1].trim());
                     break;
 
+                case MODE:
+                    String modeString = parts[1].trim();
+                    String[] parse = modeString.split(",");
+                    PlayModeType modeType = PlayModeType.fromString(parse[0].trim());
+                    String[] data = new String[parse.length - 1];
+                    for (int i = 1; i < parse.length; i ++) {
+                        data[i-1] = parse[i];
+                    }
+                    mode = new PlayMode(modeType, data);
+                    break;
+
                 case NOTES:
                     String noteString = parts[1].trim();
-                    notes = getNotesFromString(noteString);
+                    rawNotes = StringUtils.split(noteString, " ");
+                    notes = getNotesFromStringArray(rawNotes);
                     break;
 
                 default:
@@ -91,8 +108,7 @@ public class MusicFile {
         }
     }
 
-    private Note[] getNotesFromString(String noteString) {
-        String[] notes = StringUtils.split(noteString, " ");
+    public Note[] getNotesFromStringArray (String[] notes) {
         List<Note> noteList = new LinkedList<>();
         for (int i = 0; i < notes.length; i++) {
             String cleanNote = StringUtils.remove(notes[i], '-');
@@ -119,11 +135,6 @@ public class MusicFile {
         return returnArray;
     }
 
-    private String[] breakCompoundNotes(String notes) {
-        notes = StringUtils.removeStart(notes, "(");
-        notes = StringUtils.removeEnd(notes, ")");
-        return notes.split(",");
-    }
 
     public int getInstrument() {
         return instrument;
@@ -145,7 +156,19 @@ public class MusicFile {
         return bpm;
     }
 
+    public PlayMode getMode() {
+        return mode;
+    }
+
+    public int getResolution() {
+        return resolution;
+    }
+
     public NotationType getType() {
         return type;
+    }
+
+    public String[] getRawNotes() {
+        return rawNotes;
     }
 }
